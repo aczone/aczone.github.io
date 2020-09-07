@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>預計抵達時間</title>
+	<style type="text/css">
+  @media screen and (max-width: 500px) {
+   table {
+        width: 100%;
+        font-size: 3.5vw;
+        text-align: center;
+    }
+  }
+		.centerText{
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script type="text/javascript" src="bus.js"></script>
+
+<div id="test"></div>
+
+<script type="text/javascript">
+
+	var x = document.getElementById("test");
+  var timer;
+  var bound ="2";
+  
+	var url = ["http://etav2.kmb.hk/?action=geteta&lang=tc&route=277X&bound=2&stop=LU05W13000&stop_seq=9",
+           "http://etav2.kmb.hk/?action=geteta&lang=tc&route=89C&bound=2&stop=LU05W12500&stop_seq=11",
+           "http://etav2.kmb.hk/?action=geteta&lang=tc&route=89D&bound=2&stop=LU05W12500&stop_seq=9",
+	         "http://etav2.kmb.hk/?action=geteta&lang=tc&route=80X&bound=2&stop=LU05W12000&stop_seq=10",
+	         "http://etav2.kmb.hk/?action=geteta&lang=tc&route=89X&bound=2&stop=LU05W11000&stop_seq=10"];
+
+	var today = new Date().getHours();
+    if (today >= 6 && today <=11 && today >=15 && today <= 20) {
+      url.push("http://etav2.kmb.hk/?action=geteta&lang=tc&route=83X&bound=2&stop=LU05W12500&stop_seq=10");
+    }
+    if (today >= 9 && today <= 23) {
+      url.push("http://etav2.kmb.hk/?action=geteta&lang=tc&route=277E&bound=2&stop=LU05W13000&stop_seq=9");
+    }
+  
+  refresh(url);
+  
+function refresh(source){
+    var arr = [];
+    var calls = [];
+    for (var i = 0; i < source.length; i++) {
+		var r = source[i];
+		calls.push(
+        $.getJSON(r,
+            (function(i) {
+                return function(d) {
+					          d.url=source[i];
+                    arr[i] = d;
+				};
+            }(i)) 
+        )
+    );
+}
+$.when.apply($,calls).then(function() {
+  var route = [];
+	var seq = [];
+  for(var i=0; i<source.length ; i++){
+      
+      route[i] = getURLParameter("route",arr[i].url);
+      seq[i] = getURLParameter("stop_seq",arr[i].url);
+
+    for(var j=0; j<arr[i].response.length ; j++){
+      arr[i].response[j].bus = route[i] ;
+			arr[i].response[j].seq = seq[i];
+			
+    }
+	}
+	console.log(arr);
+    getinfo(arr);
+});
+
+}
+
+function getinfo(arr){
+	
+	window.clearTimeout(timer);
+	
+    var datac = [];
+    
+    for(var k=0; k<arr.length ; k++){
+      datac = $.merge(datac, arr[k].response ) ;
+    }
+    
+    datac = sortBy(datac,'ex');
+    datac = datac.filter(function (n) { return n.t != "尾班車已過本站"; });
+		timer = window.setTimeout(function(){ refresh(url); }, 30000);
+		
+		$.getJSON('https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D%22http%3A%2F%2Fwww.weather.gov.hk%2Fcgi-bin%2Fhko%2Fntimec.pl%22%20and%0A%20%20%20%20%20%20xpath%3D\'%2F%2Fh2\'&format=json&callback=', function(hkotime){
+		
+		var hkotime2 = hkotime.query.results.h2.content.trim().replace("時間:","").substr(12,8)
+		var hkotime = hkotime2.substr(0,5);
+		
+		var date2 = new Date ("January 1, 1970 " + hkotime);
+		
+		var output="現在時間: " + hkotime2 +"<br>";
+	
+		output+="<table><tr><th></th><th>巴士</th><th>預計抵達紅萼樓</th><th>大老山隧道(北行)</th></tr>";
+
+        for (var i=0; i<datac.length; i++) {
+	
+			output+="<tr><td>";
+			
+			if(datac[i].ei=="Y") {output+="<img src=\"non_GPS.png\" height=\"20\">"};
+			
+			output+="</td>";
+			
+			var colour="#000000";
+			if(datac[i].eot=="T") {colour="#FF0000"};
+			
+			var diff = "", difft = "", tdifft ="", display = "";
+			var regex = new RegExp("^[0-9]{2}:[0-9]{2}$", "i");
+			
+			if (regex.test(datac[i].t)) {
+				var date1 = new Date ("January 1, 1970 " + datac[i].t);
+				var diff = Math.floor((date1 - date2) / 1000 / 60);
+			
+					if (Math.abs(diff) > 100){
+						date1 = new Date ("January 2, 1970 " + datac[i].t);
+						diff = Math.floor((date1 - date2) / 1000 / 60);
+					}
+			  
+			  tdifft = "6分鐘";
+			  
+			  var tunneltime = new Date("January 1, 1970 " + datac[i].t);
+			  tunneltime.setMinutes(tunneltime.getMinutes() + 6);
+			  var display = addZero(tunneltime.getHours()) + ":" + addZero(tunneltime.getMinutes());
+			  
+				if (diff == "0"){ difft = "到達";}
+				else if (diff < 0){	difft = "到達/離開";}
+				else{ difft = diff + "分鐘"; tdifft = Math.abs(diff)+6+"分鐘"; }
+			
+			}
+			else {
+			  display = "預定班次";
+			}
+			
+			output+="<td><font color=\""+ colour +"\">" + datac[i].bus + "</font></td><td class=\"centerText\"><font color=\""+ colour +"\">" + difft + " (" + datac[i].t + ")</font></td>";
+			
+			output+="<td class=\"centerText\">"+ tdifft  + " (" + display + ")" + "</td>";
+			
+			//if(datac[i].w=="Y") {output+="<td><img src=\"w.png\"></td>"};
+			
+			output+="</tr>";
+			
+		}		
+			
+			output+="</table>";
+			
+			output+="<img OnMouseOver=\"this.style.cursor='pointer';\" onclick=\"javascript:refresh(url); closedialog(); \" src=\"f5.png\">";
+			
+			x.innerHTML=output;
+			
+			});
+
+  }
+</script>
+</body>
+</html>
