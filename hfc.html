@@ -28,12 +28,11 @@
   var timer;
   var bound ="2";
   
-	var url = ["http://etav2.kmb.hk/?action=geteta&lang=tc&route=277X&bound=2&stop=LU05W13000&stop_seq=9",
-           "http://etav2.kmb.hk/?action=geteta&lang=tc&route=89C&bound=2&stop=LU05W12500&stop_seq=11",
-           "http://etav2.kmb.hk/?action=geteta&lang=tc&route=89D&bound=2&stop=LU05W12500&stop_seq=9",
-	         "http://etav2.kmb.hk/?action=geteta&lang=tc&route=80X&bound=2&stop=LU05W12000&stop_seq=10",
-	         "http://etav2.kmb.hk/?action=geteta&lang=tc&route=89X&bound=2&stop=LU05W11000&stop_seq=10"];
-
+	var url = ["https://rt.data.gov.hk/v1/transport/citybus-nwfb/eta/CTB/001197/85",
+           "https://rt.data.gov.hk/v1/transport/citybus-nwfb/eta/CTB/001216/118",
+           "https://rt.data.gov.hk/v1/transport/citybus-nwfb/eta/CTB/001216/780",
+	         "https://rt.data.gov.hk/v1/transport/citybus-nwfb/eta/NWFB/001216/8"];
+/*
 	var today = new Date().getHours();
     if (today >= 6 && today <=11 && today >=15 && today <= 20) {
       url.push("http://etav2.kmb.hk/?action=geteta&lang=tc&route=83X&bound=2&stop=LU05W12500&stop_seq=10");
@@ -41,7 +40,7 @@
     if (today >= 9 && today <= 23) {
       url.push("http://etav2.kmb.hk/?action=geteta&lang=tc&route=277E&bound=2&stop=LU05W13000&stop_seq=9");
     }
-  
+*/  
   refresh(url);
   
 function refresh(source){
